@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, useNavigate, useLocation } from
 import { Navbar, Hero } from './components/Landing';
 import { ChatInterface } from './components/ChatInterface';
 import { QuestionBank } from './components/QuestionBank';
+import { AuthPage } from './components/AuthPage';
 import { AuthTestComponent } from './components/AuthTestComponent';
 import { AnimatePresence } from 'motion/react';
 import { Sigma } from 'lucide-react';
@@ -118,6 +119,7 @@ function AppContent() {
 
           />
         } />
+        <Route path="/auth" element={<AuthPage />} />
         <Route path="/auth-test" element={<AuthTestComponent />} />
       </Routes>
 

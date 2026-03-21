@@ -10,6 +10,8 @@ import { NotFoundError } from './utils/errors';
 // Routes
 import authRoutes from './routes/auth.routes';
 import chatRoutes from './routes/chat.routes';
+import questionRoutes from './routes/question.routes';
+import favoriteRoutes from './routes/favorite.routes';
 
 export const app = express();
 
@@ -72,6 +74,8 @@ app.get('/health', (req, res) => {
 // 7. API Routes Mounting
 app.use('/api/auth', authRoutes);
 app.use('/api/chat', chatRoutes);
+app.use('/api/questions', questionRoutes);
+app.use('/api/favorites', favoriteRoutes);
 
 
 // Test routes

@@ -26,14 +26,26 @@ export const QuestionBank = ({ onClose, onAskAI }: { onClose: () => void, onAskA
   const loadInitialData = async () => {
     try {
       setIsLoading(true);
-      const [qRes, fRes] = await Promise.all([
-        api.get<any[]>('/questions'),
-        api.get<any[]>('/favorites')
-      ]);
-      setQuestions(qRes.data.data);
-      setFavorites(fRes.data.data.map((f: any) => f.questionId));
+      
+      // Load questions first (public API - should always work)
+      const qRes = await api.get<any>('/questions');
+      setQuestions(qRes.data.data.questions || []);
+      
+      // Try to load favorites separately (requires auth - may fail)
+      try {
+        const fRes = await api.get<any>('/favorites');
+        setFavorites(fRes.data.data.favorites?.map((f: any) => f.questionId) || []);
+      } catch (favError: any) {
+        // Favorites require auth - silently ignore if not logged in
+        if (favError.status === 401) {
+          console.log('User not logged in - favorites disabled');
+          setFavorites([]);
+        } else {
+          console.error('Failed to load favorites:', favError);
+        }
+      }
     } catch (error) {
-      console.error("Failed to load question bank data", error);
+      console.error("Failed to load questions:", error);
     } finally {
       setIsLoading(false);
     }

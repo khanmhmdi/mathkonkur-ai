@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, useNavigate, useLocation } from
 import { Navbar, Hero } from './components/Landing';
 import { ChatInterface } from './components/ChatInterface';
 import { QuestionBank } from './components/QuestionBank';
+import { AuthTestComponent } from './components/AuthTestComponent';
 import { AnimatePresence } from 'motion/react';
 import { Sigma } from 'lucide-react';
 import { Question } from './data/questions';
@@ -117,6 +118,7 @@ function AppContent() {
 
           />
         } />
+        <Route path="/auth-test" element={<AuthTestComponent />} />
       </Routes>
 
       <footer className="bg-slate-900 text-white py-12">

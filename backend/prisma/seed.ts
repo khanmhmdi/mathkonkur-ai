@@ -7,6 +7,8 @@
  */
 
 import { PrismaClient } from '@prisma/client';
+import * as bcrypt from 'bcrypt';
+import { v4 as uuidv4 } from 'uuid';
 // Static ESM-compatible import from the local backend data folder.
 import { KONKUR_QUESTIONS } from '../src/data/questions';
 
@@ -49,20 +51,72 @@ export function transformQuestion(q: typeof KONKUR_QUESTIONS[0]) {
 }
 
 // ─────────────────────────────────────────────────────────────
+// Helper: Seed test users for development/testing
+// ─────────────────────────────────────────────────────────────
+async function seedTestUsers() {
+  const testUsers = [
+    { email: 'test@test.com', password: '123456', name: 'Test User', level: 'intermediate' },
+    { email: 'admin@test.com', password: 'admin123', name: 'Admin User', level: 'advanced' },
+  ];
+
+  console.log('🔐 Seeding test users...');
+
+  for (const testUser of testUsers) {
+    // Check if user already exists
+    const existing = await prisma.user.findUnique({ where: { email: testUser.email } });
+    if (existing) {
+      console.log(`   ⏭️  ${testUser.email} already exists, skipping...`);
+      continue;
+    }
+
+    // Hash password
+    const passwordHash = await bcrypt.hash(testUser.password, 10);
+
+    // Create user
+    const user = await prisma.user.create({
+      data: {
+        email: testUser.email,
+        passwordHash,
+        name: testUser.name,
+        level: testUser.level,
+      },
+    });
+
+    // Create a session for the user
+    const sessionId = uuidv4();
+    const refreshToken = Buffer.from(JSON.stringify({ userId: user.id, sessionId })).toString('base64');
+    
+    await prisma.session.create({
+      data: {
+        userId: user.id,
+        token: refreshToken,
+        expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
+      },
+    });
+
+    console.log(`   ✅ ${testUser.email} (${testUser.name})`);
+  }
+}
+
+// ─────────────────────────────────────────────────────────────
 // Main seed function
 // ─────────────────────────────────────────────────────────────
 async function main() {
   console.log('🌱 Starting database seed...');
 
-  // Idempotency guard — skip if data already present
-  const existing = await prisma.question.count();
-  if (existing > 0) {
-    console.log(`⚠️  Seed skipped: ${existing} questions already exist in the database.`);
-    console.log('   To re-seed, run: npx prisma migrate reset');
-    return;
-  }
-
   try {
+    // Always seed test users
+    await seedTestUsers();
+
+    // Idempotency guard — skip questions if data already present
+    const existing = await prisma.question.count();
+    if (existing > 0) {
+      console.log(`⚠️  Question seed skipped: ${existing} questions already exist in the database.`);
+      console.log('   To re-seed, run: npx prisma migrate reset');
+      await prisma.$disconnect();
+      return;
+    }
+
     console.log('🗑  Clearing dependent tables (progress, favorites)...');
     await prisma.userProgress.deleteMany();
     await prisma.userFavorite.deleteMany();

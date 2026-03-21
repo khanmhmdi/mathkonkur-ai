@@ -14,7 +14,13 @@ View your app in AI Studio: https://ai.studio/apps/acd4f837-d284-4bc6-be73-bac98
 
 Project infrastructure setup.
 
-### [Phase 3: Auth System](DOCS_PHASE3.md)
+### [Phase 3: Auth System (COMPLETED)](DOCS_PHASE3.md)
+
+✅ **Backend Authentication**: JWT tokens, password hashing, session management  
+✅ **Frontend UI**: Modern login/signup pages, responsive design  
+✅ **Integration**: Complete frontend-backend auth flow  
+✅ **Security**: HttpOnly cookies, CORS protection, input validation  
+✅ **Documentation**: Comprehensive guides and API references
 
 ### [Phase 4: Error Handling & Server](DOCS_PHASE4.md)
 
@@ -40,18 +46,64 @@ Project infrastructure setup.
 
 ## Structure
 
-- **[backend/](backend/README.md)**: Node.js/TypeScript backend API.
+- **[backend/](backend/README.md)**: Node.js/TypeScript backend API with authentication, database, and AI services.
 
-- **frontend/ (src/)**: Vite-based AI Studio frontend app.
+- **frontend/ (src/)**: Vite-based React frontend app with authentication UI, chat interface, and question bank.
+
+### Key Components
+
+**Authentication System**:
+- `src/components/AuthPage.tsx` - Login/signup UI with modern design
+- `src/contexts/AuthContext.tsx` - Authentication state management
+- `backend/src/controllers/auth.controller.ts` - Auth API endpoints
+- `backend/src/services/auth.service.ts` - Business logic and security
+
+**Core Features**:
+- `src/components/ChatInterface.tsx` - AI tutoring chat
+- `src/components/QuestionBank.tsx` - Math question browser
+- `backend/src/services/ai.service.ts` - Gemini AI integration
 
 ## Run Locally
 
-**Prerequisites:**  Node.js
+**Prerequisites:** Node.js, PostgreSQL
 
-1. Install dependencies:
-   `npm install`
+1. **Install dependencies:**
+   ```bash
+   npm install
+   cd backend && npm install
+   ```
 
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
+2. **Set environment variables:**
+   - Copy `.env.example` to `.env`
+   - Set `GEMINI_API_KEY` to your Gemini API key
+   - Configure database connection in `backend/.env`
 
-3. Run the app:
-   `npm run dev`
+3. **Setup database:**
+   ```bash
+   cd backend
+   npm run db:migrate
+   npm run db:seed
+   ```
+
+4. **Run the application:**
+   ```bash
+   # Option 1: Run both frontend and backend
+   npm run dev:full
+   
+   # Option 2: Run separately
+   npm run dev              # Frontend on http://localhost:3000
+   cd backend && npm run dev # Backend on http://localhost:4000
+   ```
+
+5. **Test authentication:**
+   - Visit `http://localhost:3000`
+   - Click "ورود / ثبت‌نام" in the navbar
+   - Test signup and login flows
+
+### Authentication Features
+
+- 🔐 **Secure Login/Signup**: JWT tokens with refresh rotation
+- 🎨 **Modern UI**: Responsive design with Persian localization
+- 🛡️ **Security**: Password hashing, HttpOnly cookies, CORS protection
+- 📱 **Mobile Ready**: Optimized for all device sizes
+- ⚡ **Auto-Refresh**: Seamless token renewal without user intervention

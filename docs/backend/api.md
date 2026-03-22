@@ -106,11 +106,11 @@ Invalidate refresh token session.
 
 ## Chat Endpoints (`/api/chat`)
 
-**Authentication Required**: All endpoints require `Authorization: Bearer <token>`
+**Authentication**: Optional for POST endpoints (visitors allowed with 2-prompt limit), Required for GET/DELETE
 
 ### POST /
 
-Create a new conversation.
+Create a new conversation. Visitors can create up to 2 conversations before being required to log in.
 
 **Request Body**:
 ```typescript
@@ -204,6 +204,8 @@ Delete a conversation and all its messages.
 ```
 
 ## Question Endpoints (`/api/questions`)
+
+**Authentication Required**: Yes - All endpoints require `Authorization: Bearer <token>`
 
 ### GET /
 
@@ -433,6 +435,7 @@ Test endpoint.
 | `AUTH_UNAUTHORIZED` | 403 | User lacks permissions |
 | `NOT_FOUND` | 404 | Resource not found |
 | `CONFLICT` | 409 | Resource already exists |
+| `VISITOR_PROMPT_LIMIT_EXCEEDED` | 429 | Visitor prompt limit (2) exceeded |
 | `AI_TIMEOUT` | 504 | AI service timeout |
 | `AI_QUOTA_EXCEEDED` | 429 | API quota exceeded |
 | `INTERNAL_ERROR` | 500 | Server error |

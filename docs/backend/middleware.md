@@ -8,7 +8,8 @@ Express middleware layer for authentication, validation, and error handling.
 backend/src/middleware/
 ├── auth.middleware.ts       # JWT authentication
 ├── validate.middleware.ts   # Zod validation
-└── error.middleware.ts      # Error handling
+├── error.middleware.ts      # Error handling
+└── visitor-limit.middleware.ts # Visitor prompt limit for chat
 ```
 
 ## Authentication Middleware (`auth.middleware.ts`)
@@ -156,6 +157,45 @@ router.post('/register', validate(registerSchema), register);
 | `submitAnswerSchema` | answerIndex, timeSpentSeconds? | `question.routes.ts` |
 | `addFavoriteSchema` | questionId, notes? | `favorite.routes.ts` |
 
+## Visitor Limit Middleware (`visitor-limit.middleware.ts`)
+
+**File**: `backend/src/middleware/visitor-limit.middleware.ts`
+
+### visitorPromptLimit
+
+Middleware to limit non-authenticated users to 2 chat prompts.
+
+**Implementation**:
+```typescript
+export function visitorPromptLimit(req: Request, res: Response, next: NextFunction): void
+```
+
+**Behavior**:
+1. Checks for valid JWT token in Authorization header
+2. If no valid token → marks as visitor
+3. Creates/retrieves visitor ID from cookie
+4. Checks prompt count in database
+5. If count >= 2 → returns 429 error
+6. If count < 2 → allows request and increments count after chat message
+
+**Error Response** (when limit exceeded):
+```typescript
+{
+  success: false,
+  error: {
+    code: 'VISITOR_PROMPT_LIMIT_EXCEEDED',
+    message: 'شما به محدودیت ۲ پیام برای کاربران مهمان رسیده‌اید. لطفاً برای ادامه وارد حساب کاربری خود شوید.'
+  }
+}
+```
+
+**Cookie**: Sets `visitorId` cookie (httpOnly, 30 days) to track visitor sessions.
+
+**Usage**:
+- Applied to `POST /api/chat` and `POST /api/chat/:conversationId/message` routes
+- Allows visitors to try the chat with limited prompts
+- Prompts users to register after limit is reached
+
 ## Error Middleware (`error.middleware.ts`)
 
 **File**: `backend/src/middleware/error.middleware.ts`
@@ -291,8 +331,8 @@ app.get('/health', ...);
 
 // 7. API routes with auth/validation middleware
 app.use('/api/auth', authRoutes);        // validation middleware
-app.use('/api/chat', chatRoutes);        // authenticate + validation
-app.use('/api/questions', questionRoutes); // optionalAuth + validation
+app.use('/api/chat', chatRoutes);        // visitorPromptLimit (visitors allowed with 2-prompt limit) + validation
+app.use('/api/questions', questionRoutes); // authenticate (requires login)
 app.use('/api/favorites', favoriteRoutes); // authenticate + validation
 app.use('/api/user', userRoutes);        // authenticate
 

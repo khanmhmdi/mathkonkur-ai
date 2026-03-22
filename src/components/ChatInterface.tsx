@@ -43,6 +43,7 @@ export const ChatInterface = ({ onClose, initialMessage }: { onClose: () => void
   const [level, setLevel] = useState(LEVELS[0]);
   const [showSettings, setShowSettings] = useState(false);
   const [selectedImage, setSelectedImage] = useState<{ data: string; mimeType: string } | null>(null);
+  const [visitorLimitExceeded, setVisitorLimitExceeded] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -100,7 +101,14 @@ export const ChatInterface = ({ onClose, initialMessage }: { onClose: () => void
           }
           if (selectedImage) setSelectedImage(null);
         } catch (error: any) {
-          setMessages(prev => [...prev, { role: 'model', text: error.message || "خطایی در برقراری ارتباط با سرور رخ داد." }]);
+          const errorCode = error.response?.data?.error?.code;
+          const status = error.response?.status;
+          if (errorCode === 'VISITOR_PROMPT_LIMIT_EXCEEDED' || status === 429) {
+            setVisitorLimitExceeded(true);
+            setMessages(prev => [...prev, { role: 'model', text: 'برای ادامه در سایت ثبت نام کنید' }]);
+          } else {
+            setMessages(prev => [...prev, { role: 'model', text: error.message || "خطایی در برقراری ارتباط با سرور رخ داد." }]);
+          }
         } finally {
           setIsSending(false);
         }
@@ -142,7 +150,14 @@ export const ChatInterface = ({ onClose, initialMessage }: { onClose: () => void
       setMessages(prev => [...prev, { role: 'model', text: res.data.data.message.content }]);
     } catch (error: any) {
       console.error(error);
-      setMessages(prev => [...prev, { role: 'model', text: error.message || "خطایی رخ داد. لطفاً دوباره تلاش کنید." }]);
+      const errorCode = error.response?.data?.error?.code;
+      const status = error.response?.status;
+      if (errorCode === 'VISITOR_PROMPT_LIMIT_EXCEEDED' || status === 429) {
+        setVisitorLimitExceeded(true);
+        setMessages(prev => [...prev, { role: 'model', text: 'برای ادامه در سایت ثبت نام کنید' }]);
+      } else {
+        setMessages(prev => [...prev, { role: 'model', text: error.message || "خطایی رخ داد. لطفاً دوباره تلاش کنید." }]);
+      }
     } finally {
       setIsSending(false);
     }
@@ -373,6 +388,26 @@ export const ChatInterface = ({ onClose, initialMessage }: { onClose: () => void
             </div>
           </div>
         </div>
+        
+        {visitorLimitExceeded && (
+          <div className="px-4 pb-4">
+            <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 text-center">
+              <p className="text-amber-800 font-bold mb-3">برای ادامه در سایت ثبت نام کنید</p>
+              <div className="flex gap-3 justify-center">
+                <button
+                  onClick={() => {
+                    onClose();
+                    navigate('/auth');
+                  }}
+                  className="px-4 py-2 bg-indigo-600 text-white rounded-xl font-bold text-sm hover:bg-indigo-700 transition-colors"
+                >
+                  ورود / ثبت نام
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+        
         <p className="text-center text-[10px] text-slate-400 mt-3">
           MathKonkur یک هوش مصنوعی است. برای اطمینان، محاسبات پیچیده را دوباره چک کنید.
         </p>

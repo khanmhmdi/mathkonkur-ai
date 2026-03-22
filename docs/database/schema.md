@@ -27,6 +27,7 @@ model User {
   passwordHash  String             @map("password_hash")
   name          String?
   level         String             @default("ریاضی فیزیک")
+  promptCount   Int                @default(0) @map("prompt_count")
   createdAt     DateTime           @default(now()) @map("created_at")
   updatedAt     DateTime           @updatedAt @map("updated_at")
   lastLoginAt   DateTime?          @map("last_login_at")
@@ -49,6 +50,7 @@ model User {
 | `passwordHash` | String | @map("password_hash") | bcrypt hash |
 | `name` | String? | optional | Display name |
 | `level` | String | default "ریاضی فیزیک" | Education track |
+| `promptCount` | Int | @default(0) | Visitor chat prompt count (for limiting non-authenticated users) |
 | `createdAt` | DateTime | @default(now()) | Registration date |
 | `updatedAt` | DateTime | @updatedAt | Last update |
 | `lastLoginAt` | DateTime? | optional | Last login time |

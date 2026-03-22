@@ -44,21 +44,21 @@ const uuidParamSchema = z.object({
 // GET /api/questions — List all questions with optional filters
 router.get(
   '/',
-  optionalAuth,
+  authenticate,
   questionController.getQuestions
 );
 
 // GET /api/questions/search — Search questions
 router.get(
   '/search',
-  optionalAuth,
+  authenticate,
   questionController.searchQuestions
 );
 
 // GET /api/questions/:id — Get single question
 router.get(
   '/:id',
-  optionalAuth,
+  authenticate,
   questionController.getQuestionById
 );
 

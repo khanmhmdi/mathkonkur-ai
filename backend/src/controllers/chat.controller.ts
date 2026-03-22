@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import { chatService } from '../services/chat.service';
 import { success } from '../utils/api-response';
 import { ImageData } from '../services/ai.service';
+import { incrementVisitorPrompt } from '../middleware/visitor-limit.middleware';
 
 // Ensure the global Request type extension from auth.middleware is recognized
 import '../middleware/auth.middleware';
@@ -18,7 +19,8 @@ export const chatController = {
   async createConversation(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const { initialMessage, subject, level } = req.body;
-      const userId = (req.user as any).userId;
+      const userId = (req.user as any)?.userId || (req as any).visitorId;
+      const isVisitor = !req.user;
 
       let image: ImageData | undefined;
       if (req.body.image) {
@@ -39,6 +41,10 @@ export const chatController = {
         image,
       });
 
+      if (isVisitor && userId) {
+        await incrementVisitorPrompt(userId);
+      }
+
       res.status(201).json(success(result));
     } catch (err) {
       next(err);
@@ -53,7 +59,8 @@ export const chatController = {
     try {
       const conversationId = String(req.params.conversationId);
       const { content } = req.body;
-      const userId = (req.user as any).userId;
+      const userId = (req.user as any)?.userId || (req as any).visitorId;
+      const isVisitor = !req.user;
 
       let image: ImageData | undefined;
       if (req.body.image) {
@@ -72,6 +79,10 @@ export const chatController = {
         content,
         image,
       });
+
+      if (isVisitor && userId) {
+        await incrementVisitorPrompt(userId);
+      }
 
       res.status(200).json(success({ message: response }));
     } catch (err: any) {

@@ -11,6 +11,7 @@ src/components/
 ├── ChatInterface.tsx       # AI chat interface
 ├── ErrorBoundary.tsx       # Error boundary wrapper
 ├── Landing.tsx             # Landing page (Navbar + Hero)
+├── PricingPage.tsx         # Subscription pricing page
 └── QuestionBank.tsx        # Question browser
 ```
 
@@ -22,6 +23,7 @@ src/components/
 |------------|-------|-------------|
 | `Landing` | `/` | Landing page with sections |
 | `AuthPage` | `/auth` | Login/register forms |
+| `PricingPage` | `/pricing` | Subscription plans and pricing |
 | `QuestionBank` | `/bank` | Question browsing |
 
 ### Feature Components

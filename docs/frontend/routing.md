@@ -35,6 +35,7 @@ function AppContent() {
 |------|-----------|-------------|
 | `/` | `Landing` | Landing page with hero, features, how-it-works |
 | `/bank` | `QuestionBank` | Question browsing interface |
+| `/pricing` | `PricingPage` | Subscription plans and pricing |
 | `/auth` | `AuthPage` | Login/signup page |
 | `/auth-test` | `AuthTestComponent` | Authentication testing component |
 
@@ -56,6 +57,7 @@ Landing.tsx renders
 **Interactive Elements**:
 - "شروع گفتگو با هوش مصنوعی" button → Opens ChatInterface
 - "بانک سوالات" in navbar → Navigates to `/bank`
+- "قیمت‌گذاری" in navbar → Navigates to `/pricing`
 
 ### Question Bank (`/bank`)
 
@@ -84,8 +86,9 @@ AuthPage.tsx renders
 ```
 
 **Flow**:
-- Successful login → Redirect to home (/)
-- Successful register → Redirect to home (/)
+- Successful login → Redirect to returnUrl (default: `/`)
+- Successful register → Redirect to returnUrl (default: `/`)
+- If navigating from another page (e.g., `/pricing`), user is redirected back after auth
 
 ## Programmatic Navigation
 
@@ -106,8 +109,15 @@ function Component() {
 **Navigation after auth**:
 
 ```typescript
-// In AuthContext after successful login
-navigate('/');
+// In AuthPage after successful login - redirects to original page
+navigate(returnUrl); // returnUrl comes from location.state
+```
+
+**Navigation with returnUrl**:
+
+```typescript
+// Redirect to auth with return URL
+navigate('/auth', { state: { returnUrl: '/pricing' } });
 ```
 
 ## Route Parameters

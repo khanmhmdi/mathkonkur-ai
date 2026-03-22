@@ -19,6 +19,12 @@ export const Navbar = () => {
           <div className="hidden md:flex items-center gap-8">
             <a href="#features" className="text-sm font-medium text-slate-600 hover:text-indigo-600 transition-colors">ویژگی‌ها</a>
             <Link 
+              to="/pricing"
+              className="text-sm font-medium text-slate-600 hover:text-indigo-600 transition-colors"
+            >
+              قیمت‌گذاری
+            </Link>
+            <Link 
               to="/bank"
               className="text-sm font-medium text-slate-600 hover:text-indigo-600 transition-colors"
             >

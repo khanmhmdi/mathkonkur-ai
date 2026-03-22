@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { Mail, Lock, User, GraduationCap, AlertCircle, Loader, Eye, EyeOff } from 'lucide-react';
 
@@ -9,7 +9,10 @@ type Level = (typeof levels)[number];
 
 export function AuthPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { isAuthenticated, isLoading, login, register, logout, user } = useAuth();
+  
+  const returnUrl = (location.state as { returnUrl?: string })?.returnUrl || '/';
 
   const [mode, setMode] = useState<'login' | 'register'>('login');
   const [email, setEmail] = useState('');
@@ -24,9 +27,9 @@ export function AuthPage() {
   // Redirect if already authenticated
   useEffect(() => {
     if (isAuthenticated && !isLoading) {
-      navigate('/');
+      navigate(returnUrl);
     }
-  }, [isAuthenticated, isLoading, navigate]);
+  }, [isAuthenticated, isLoading, navigate, returnUrl]);
 
   const onSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -61,7 +64,7 @@ export function AuthPage() {
         await register({ email, password, name, level });
         setStatus('ثبت نام با موفقیت انجام شد. درحال انتقال ...');
       }
-      setTimeout(() => navigate('/'), 500);
+      setTimeout(() => navigate(returnUrl), 500);
     } catch (err: any) {
       console.error('[AuthPage] auth error', err);
       setError(err?.response?.data?.error?.message || err?.response?.data?.message || err?.message || 'خطای شبکه یا اطلاعات نامعتبر');

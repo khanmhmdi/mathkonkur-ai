@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import axios, { AxiosError } from 'axios';
-import { User, AuthState, LoginCredentials, RegisterData, AuthResponse } from '../types/auth';
+import { User, AuthState, LoginCredentials, RegisterData, AuthResponse, RefreshResponse, UserProfileResponse } from '../types/auth';
 
 // API Configuration
 const API_URL = 'http://localhost:4000/api';
@@ -65,7 +65,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = async (credentials: LoginCredentials): Promise<void> => {
     try {
       const response = await axiosInstance.post<AuthResponse>('/auth/login', credentials);
-      const { user, accessToken } = response.data;
+      const { user, accessToken } = response.data.data;
       setAuthenticated(user, accessToken);
     } catch (error: any) {
       clearAuth();
@@ -77,7 +77,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const register = async (data: RegisterData): Promise<void> => {
     try {
       const response = await axiosInstance.post<AuthResponse>('/auth/register', data);
-      const { user, accessToken } = response.data;
+      const { user, accessToken } = response.data.data;
       setAuthenticated(user, accessToken);
     } catch (error: any) {
       clearAuth();
@@ -100,8 +100,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Refresh token method
   const refreshToken = async (): Promise<string | null> => {
     try {
-      const response = await axiosInstance.post<{ accessToken: string }>('/auth/refresh');
-      const { accessToken } = response.data;
+      const response = await axiosInstance.post<RefreshResponse>('/auth/refresh');
+      const { accessToken } = response.data.data;
       
       localStorage.setItem('accessToken', accessToken);
       updateState({ accessToken });
@@ -134,8 +134,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           timeout: 10000,
         });
 
-        const response = await validateAxios.get<{ user: User }>('/user/me');
-        const { user } = response.data;
+        const response = await validateAxios.get<UserProfileResponse>('/user/me');
+        const { user } = response.data.data;
         
         setState(prev => ({
           ...prev,

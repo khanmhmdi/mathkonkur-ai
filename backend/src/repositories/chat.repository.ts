@@ -63,7 +63,7 @@ export const chatRepository = {
    * Adds a message to a conversation.
    * Updates the conversation's updatedAt timestamp automatically via Prisma.
    */
-  async addMessage(conversationId: string, role: 'user' | 'model', content: string, image?: ImageData) {
+  async addMessage(conversationId: string, role: 'user' | 'assistant' | 'model', content: string, image?: ImageData) {
     // Note: Schema ChatMessage doesn't currently support image storage.
     // We store the text. If images need persistence, they would need a file storage or blob mapping.
     // For now, as per schema, we save the content.

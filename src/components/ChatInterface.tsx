@@ -6,6 +6,7 @@ import rehypeKatex from 'rehype-katex';
 import 'katex/dist/katex.min.css';
 import { motion, AnimatePresence } from 'motion/react';
 import { api } from '../services/api';
+import { useAuth } from '../contexts/AuthContext';
 import { cn } from '../utils/cn';
 import { useNavigate } from 'react-router-dom';
 
@@ -21,15 +22,16 @@ const SUBJECTS = [
   "مثلثات", 
   "هندسه تحلیلی", 
   "بردارها و هندسه", 
-  "حسابان (حد، مشتق، انتگرال)", 
+  "حسابان",
   "گسسته و احتمال"
 ];
 
 const LEVELS = [
-  "ریاضی فیزیک (تخصصی)", "علوم تجربی (ریاضی عمومی)", "انسانی و معارف"
+  "ریاضی فیزیک", "علوم تجربی", "انسانی و معارف"
 ];
 
 export const ChatInterface = ({ onClose, initialMessage }: { onClose: () => void, initialMessage?: string | null }) => {
+  const { accessToken, isAuthenticated } = useAuth();
   const [messages, setMessages] = useState<Message[]>([
     { role: 'model', text: "سلام! من MathKonkur AI هستم. آماده‌ام تا در حل سخت‌ترین تست‌های ریاضی و درک عمیق مفاهیم حسابی و هندسی بهت کمک کنم. کدوم مبحث رو شروع کنیم؟" }
   ]);
@@ -56,6 +58,13 @@ export const ChatInterface = ({ onClose, initialMessage }: { onClose: () => void
   // Create a new conversation
   const createConversation = async (firstMessage: string, image?: { data: string; mimeType: string }) => {
     try {
+      console.log('🔐 ChatInterface: Creating conversation', {
+        accessToken: accessToken ? `${accessToken.substring(0, 20)}...` : 'NOT SET',
+        subject,
+        level,
+        messageLength: firstMessage.length
+      });
+      
       const res = await api.post<any>('/chat', {
         subject,
         level,
@@ -63,10 +72,15 @@ export const ChatInterface = ({ onClose, initialMessage }: { onClose: () => void
         image: image ? `data:${image.mimeType};base64,${image.data}` : undefined
       });
       const data = res.data.data;
-      setConversationId(data.id);
+      setConversationId(data.conversation.id);
       return data;
     } catch (error: any) {
       console.error("Create Chat Error:", error);
+      console.error("Error details:", {
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        data: error.response?.data
+      });
       throw error;
     }
   };
@@ -81,8 +95,8 @@ export const ChatInterface = ({ onClose, initialMessage }: { onClose: () => void
         setIsSending(true);
         try {
           const conv = await createConversation(initialMessage, selectedImage || undefined);
-          if (conv.initialResponse) {
-            setMessages(prev => [...prev, { role: 'model', text: conv.initialResponse }]);
+          if (conv.message?.content) {
+            setMessages(prev => [...prev, { role: 'model', text: conv.message.content }]);
           }
           if (selectedImage) setSelectedImage(null);
         } catch (error: any) {
@@ -111,12 +125,12 @@ export const ChatInterface = ({ onClose, initialMessage }: { onClose: () => void
       if (!currentId) {
         const conv = await createConversation(userMessage, currentImage || undefined);
         // If createConversation already returned the AI reply (standard in my backend /chat flow)
-        if (conv.initialResponse) {
-          setMessages(prev => [...prev, { role: 'model', text: conv.initialResponse }]);
+        if (conv.message?.content) {
+          setMessages(prev => [...prev, { role: 'model', text: conv.message.content }]);
           setIsSending(false);
           return;
         }
-        currentId = conv.id;
+        currentId = conv.conversation.id;
       }
 
       // Send to existing chat
@@ -125,7 +139,7 @@ export const ChatInterface = ({ onClose, initialMessage }: { onClose: () => void
         image: currentImage ? `data:${currentImage.mimeType};base64,${currentImage.data}` : undefined
       });
 
-      setMessages(prev => [...prev, { role: 'model', text: res.data.data.content }]);
+      setMessages(prev => [...prev, { role: 'model', text: res.data.data.message.content }]);
     } catch (error: any) {
       console.error(error);
       setMessages(prev => [...prev, { role: 'model', text: error.message || "خطایی رخ داد. لطفاً دوباره تلاش کنید." }]);

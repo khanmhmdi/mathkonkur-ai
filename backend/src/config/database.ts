@@ -62,4 +62,4 @@ export async function checkDatabaseConnection(): Promise<{ connected: boolean; l
 }
 
 // Type exports
-export { User, Session, ChatConversation, ChatMessage, Prisma } from '@prisma/client';
+export type { User, Session, ChatConversation, ChatMessage, Prisma } from '@prisma/client';

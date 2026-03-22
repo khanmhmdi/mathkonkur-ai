@@ -44,7 +44,7 @@ const errorMessages: Record<string, string> = {
  * Axios Instance Configuration
  */
 const API_URL = (typeof import.meta !== 'undefined' && import.meta.env?.VITE_API_URL) 
-  || 'http://localhost:4000/api';
+  || 'http://localhost:4001/api';
 
 const axiosInstance = axios.create({
   baseURL: API_URL,

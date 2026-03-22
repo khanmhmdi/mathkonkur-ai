@@ -31,7 +31,8 @@ Register a new user account.
   data: {
     user: { id, email, name, level, createdAt },
     accessToken: string
-  }
+  },
+  timestamp: string
 }
 ```
 
@@ -62,7 +63,8 @@ Authenticate user and receive tokens.
   data: {
     user: { id, email, name, level },
     accessToken: string
-  }
+  },
+  timestamp: string
 }
 ```
 
@@ -86,7 +88,8 @@ Refresh access token using HttpOnly cookie.
 ```typescript
 {
   success: true,
-  data: { accessToken: string }
+  data: { accessToken: string },
+  timestamp: string
 }
 ```
 
@@ -98,7 +101,7 @@ Invalidate refresh token session.
 
 **Response (200)**:
 ```typescript
-{ success: true }
+{ success: true, timestamp: string }
 ```
 
 ## Chat Endpoints (`/api/chat`)
@@ -128,8 +131,9 @@ Create a new conversation.
   success: true,
   data: {
     conversation: { id, subject, level, createdAt },
-    messages: [{ role, content }]
-  }
+    message: { id, role: 'assistant', content, createdAt }
+  },
+  timestamp: string
 }
 ```
 
@@ -150,9 +154,9 @@ Send a message in an existing conversation.
 {
   success: true,
   data: {
-    message: { role: 'user', content },
-    response: { role: 'assistant', content }
-  }
+    message: { id, role: 'assistant', content, createdAt }
+  },
+  timestamp: string
 }
 ```
 
@@ -169,7 +173,8 @@ List all conversations for the authenticated user.
 {
   success: true,
   data: conversations: [{ id, subject, level, createdAt, updatedAt }],
-  meta: { page, limit, total, totalPages }
+  meta: { page, limit, total, totalPages },
+  timestamp: string
 }
 ```
 
@@ -184,7 +189,8 @@ Get conversation message history.
   data: {
     conversation: { id, subject, level },
     messages: [{ id, role, content, createdAt }]
-  }
+  },
+  timestamp: string
 }
 ```
 
@@ -194,7 +200,7 @@ Delete a conversation and all its messages.
 
 **Response (200)**:
 ```typescript
-{ success: true }
+{ success: true, timestamp: string }
 ```
 
 ## Question Endpoints (`/api/questions`)
@@ -223,7 +229,8 @@ List questions with optional filters.
     subject, topic, level, examYear, imageUrl,
     attemptCount, correctCount, correctRate
   }],
-  meta: { page, limit, total, totalPages }
+  meta: { page, limit, total, totalPages },
+  timestamp: string
 }
 ```
 
@@ -241,7 +248,8 @@ Search questions with full-text search.
 {
   success: true,
   data: questions: [...],
-  meta: { page, limit, total, totalPages }
+  meta: { page, limit, total, totalPages },
+  timestamp: string
 }
 ```
 
@@ -256,7 +264,8 @@ Get single question by ID.
   data: {
     question: { id, text, options, correctAnswer, explanation, ... },
     userProgress?: { masteryLevel, attempts, correctAttempts }
-  }
+  },
+  timestamp: string
 }
 ```
 
@@ -287,7 +296,8 @@ Submit answer for a question.
       srsInterval: number,
       nextReviewAt: string
     }
-  }
+  },
+  timestamp: string
 }
 ```
 
@@ -309,7 +319,8 @@ List user's favorite questions.
     id, questionId, notes, createdAt,
     question: { id, text, subject, level }
   }],
-  meta: { page, limit, total, totalPages }
+  meta: { page, limit, total, totalPages },
+  timestamp: string
 }
 ```
 
@@ -329,7 +340,8 @@ Add question to favorites.
 ```typescript
 {
   success: true,
-  data: { id, questionId, notes, createdAt }
+  data: { id, questionId, notes, createdAt },
+  timestamp: string
 }
 ```
 
@@ -339,7 +351,7 @@ Remove question from favorites.
 
 **Response (200)**:
 ```typescript
-{ success: true }
+{ success: true, timestamp: string }
 ```
 
 ### PATCH /:questionId
@@ -357,7 +369,8 @@ Update favorite notes.
 ```typescript
 {
   success: true,
-  data: { id, notes, updatedAt }
+  data: { id, notes, updatedAt },
+  timestamp: string
 }
 ```
 
@@ -378,7 +391,8 @@ Get current authenticated user's profile.
       id, email, name, level,
       createdAt, lastLoginAt
     }
-  }
+  },
+  timestamp: string
 }
 ```
 

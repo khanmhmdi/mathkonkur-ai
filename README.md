@@ -61,7 +61,7 @@ Project infrastructure setup.
 **Core Features**:
 - `src/components/ChatInterface.tsx` - AI tutoring chat
 - `src/components/QuestionBank.tsx` - Math question browser
-- `backend/src/services/ai.service.ts` - Gemini AI integration
+- `backend/src/services/ai.service.ts` - GapGPT AI integration
 
 ## Run Locally
 
@@ -75,7 +75,7 @@ Project infrastructure setup.
 
 2. **Set environment variables:**
    - Copy `.env.example` to `.env`
-   - Set `GEMINI_API_KEY` to your Gemini API key
+   - Set `GAPGPT_API_KEY` to your GapGPT API key (get it from https://api.gapgpt.app)
    - Configure database connection in `backend/.env`
 
 3. **Setup database:**

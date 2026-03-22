@@ -25,8 +25,8 @@ async function verify() {
   assert(guarded.cleanContent.includes('$$ y = { x $$'), 'T2: Should leave imbalanced latex completely unparsed');
   console.log('✅ Test 2 passed\n');
 
-  // Test 3: Basic structural requirement for Gemini API Error Throwing
-  // Since we don't have a reliable mock for GoogleGenAI inside a raw executable without DI,
+  // Test 3: Basic structural requirement for GapGPT API Error Throwing
+  // Since we don't have a reliable mock for OpenAI client inside a raw executable without DI,
   // we will verify that validation boundaries instantly reject malformed arrays.
   console.log('[Test 3] Context boundaries validation');
   try {

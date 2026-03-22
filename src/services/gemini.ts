@@ -1,17 +1,19 @@
-import { GoogleGenAI } from "@google/genai";
+import OpenAI from 'openai';
 
-const genAI = new GoogleGenAI({
-  apiKey: process.env.GEMINI_API_KEY || "",
+const client = new OpenAI({
+  apiKey: (import.meta as any).env.VITE_GAPGPT_API_KEY || '',
+  baseURL: 'https://api.gapgpt.app/v1',
+  dangerouslyAllowBrowser: true
 });
 
 export const getTutorResponse = async (
   message: string,
   subject: string,
   level: string,
-  history: { role: "user" | "model"; text: string }[] = [],
+  history: { role: "user" | "assistant"; text: string }[] = [],
   image?: { data: string; mimeType: string }
 ) => {
-  const model = "gemini-3-flash-preview";
+  const model = 'gapgpt-qwen-3.5';
   
   const systemInstruction = `شما "MathKonkur AI" هستید، یک معلم خصوصی هوشمند و فوق‌تخصص ریاضیات برای دانش‌آموزان کنکوری ایران.
 هدف شما کمک به دانش‌آموزان برای تسلط کامل بر مباحث ریاضیات کنکور (ریاضی، حسابان، هندسه، گسسته و آمار و احتمال) است.
@@ -27,36 +29,37 @@ export const getTutorResponse = async (
 5. اگر تصویری از یک سوال هندسه یا نمودار ارسال شد، آن را با دقت تحلیل کرده و بر اساس داده‌های بصری راهنمایی کنید.
 6. لحن شما باید مشوق، دقیق و علمی باشد.`;
 
-  // Ensure history starts with 'user' and alternates correctly
-  let contents = history
-    .filter((h, i) => !(i === 0 && h.role === 'model')) // Remove leading model message
-    .map(h => ({
-      role: h.role,
-      parts: [{ text: h.text }]
-    }));
+  // Convert history to OpenAI format and ensure it starts with 'user'
+  let messages: OpenAI.Chat.ChatCompletionMessageParam[] = [
+    {
+      role: "system",
+      content: systemInstruction
+    }
+  ];
 
-  const userParts: any[] = [{ text: `مبحث: ${subject}\nسطح: ${level}\n\n${message}` }];
-  if (image) {
-    userParts.push({
-      inlineData: {
-        data: image.data,
-        mimeType: image.mimeType
-      }
-    });
-  }
+  // Add history messages
+  messages = messages.concat(
+    history
+      .filter((h, i) => !(i === 0 && h.role === 'assistant')) // Remove leading assistant message
+      .map(h => ({
+        role: h.role as 'user' | 'assistant',
+        content: h.text
+      }))
+  );
 
-  contents.push({
+  const userContent = `مبحث: ${subject}\nسطح: ${level}\n\n${message}`;
+  
+  messages.push({
     role: "user",
-    parts: userParts
+    content: userContent
   });
 
-  const response = await genAI.models.generateContent({
+  const response = await client.chat.completions.create({
     model,
-    contents,
-    config: {
-      systemInstruction,
-    },
+    messages,
+    max_tokens: 2048,
+    temperature: 0.7
   });
 
-  return response.text;
+  return response.choices[0].message.content || '';
 };

@@ -47,7 +47,7 @@ class ChatService {
     const aiResponse = await aiService.generateResponse(history, subject, level, image);
 
     // 5. Save AI Response
-    const aiMessage = await chatRepository.addMessage(conv.id, 'model', aiResponse.content);
+    const aiMessage = await chatRepository.addMessage(conv.id, 'assistant', aiResponse.content);
 
     return {
       conversation: conv,
@@ -72,14 +72,14 @@ class ChatService {
     
     // 4. Generate AI Response
     const aiResponse = await aiService.generateResponse(
-      history.map((m: any) => ({ role: m.role as 'user'|'model', content: m.content })),
+      history.map((m: any) => ({ role: m.role as 'user'|'assistant', content: m.content })),
       conv.subject,
       conv.level,
       image
     );
 
     // 5. Save and Return AI Message
-    const aiMessage = await chatRepository.addMessage(conversationId, 'model', aiResponse.content);
+    const aiMessage = await chatRepository.addMessage(conversationId, 'assistant', aiResponse.content);
     
     return aiMessage;
   }

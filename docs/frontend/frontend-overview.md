@@ -304,6 +304,11 @@ npm run lint
 
 # Run tests
 npm run test
+
+# Run E2E tests (Playwright)
+npm run test:e2e        # Run all E2E tests
+npm run test:e2e:ui     # Run with UI mode
+npm run test:e2e:headed # Run in headed mode
 ```
 
 ## Related Documentation

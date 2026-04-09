@@ -167,6 +167,11 @@ npm run db:seed      # Seed database
 
 # Testing
 npm run test
+
+# Frontend E2E Tests (Playwright)
+npm run test:e2e        # Run all E2E tests
+npm run test:e2e:ui     # Run with UI mode
+npm run test:e2e:headed # Run in headed mode
 ```
 
 ## Related Documentation

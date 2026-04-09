@@ -69,6 +69,12 @@ module.exports = {
 
 ```
 mathkonkur-ai/
+├── e2e/
+│   ├── playwright.config.ts
+│   ├── routes.spec.ts
+│   ├── auth.spec.ts
+│   ├── question-bank.spec.ts
+│   └── chat.spec.ts
 ├── jest.config.js              # Frontend config
 ├── src/
 │   ├── jest.setup.js
@@ -146,6 +152,26 @@ npm test -- --coverage
 - `test-e2e-gapgpt.ts` - GapGPT API E2E tests
 - `test-frontend-gapgpt.ts` - Frontend E2E tests
 - `test-frontend-validation.js` - Frontend validation tests
+
+### Playwright E2E Tests (New)
+
+**Location**: `e2e/` directory
+
+**Files**:
+- `playwright.config.ts` - Playwright configuration
+- `e2e/routes.spec.ts` - Route navigation tests (9 tests)
+- `e2e/auth.spec.ts` - Authentication form tests (5 tests)
+- `e2e/question-bank.spec.ts` - Question bank tests (2 tests)
+- `e2e/chat.spec.ts` - Chat interface tests (6 tests)
+
+**Total**: 22 E2E tests covering all frontend routes and functionality
+
+**Run commands**:
+```bash
+npm run test:e2e        # Run all E2E tests
+npm run test:e2e:ui     # Run with UI mode
+npm run test:e2e:headed # Run in headed mode
+```
 
 ## Test Patterns
 

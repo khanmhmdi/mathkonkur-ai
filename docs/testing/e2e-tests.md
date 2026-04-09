@@ -1,6 +1,6 @@
 # E2E Tests
 
-End-to-end testing for MathKonkur AI.
+End-to-end testing for MathKonkur AI using Playwright.
 
 ## E2E Test Location
 
@@ -9,6 +9,89 @@ mathkonkur-ai/
 ├── test-e2e-gapgpt.ts
 ├── test-frontend-gapgpt.ts
 └── test-frontend-validation.js
+```
+
+## Playwright E2E Tests
+
+**File**: `playwright.config.ts`
+
+```typescript
+import { defineConfig, devices } from '@playwright/test';
+
+export default defineConfig({
+  testDir: './e2e',
+  fullyParallel: true,
+  reporter: 'html',
+  use: {
+    baseURL: 'http://localhost:3000',
+    trace: 'on-first-retry',
+  },
+  projects: [
+    {
+      name: 'chromium',
+      use: { ...devices['Desktop Chrome'] },
+    },
+  ],
+  webServer: {
+    command: 'npm run dev',
+    url: 'http://localhost:3000',
+    reuseExistingServer: true,
+    timeout: 120000,
+  },
+});
+```
+
+## Test Files
+
+### Route Navigation Tests (`e2e/routes.spec.ts`)
+
+Tests all frontend routes and navigation:
+
+- `/` - Landing page
+- `/bank` - Question bank page
+- `/auth` - Authentication page
+- `/pricing` - Pricing page
+- `/auth-test` - Auth test component
+
+### Authentication Tests (`e2e/auth.spec.ts`)
+
+Tests authentication forms:
+
+- Login form display
+- Email/password input fields
+- Submit button functionality
+- Form validation
+
+### Question Bank Tests (`e2e/question-bank.spec.ts`)
+
+Tests question bank functionality:
+
+- Page loading
+- Interactive elements presence
+
+### Chat Interface Tests (`e2e/chat.spec.ts`)
+
+Tests chat modal functionality:
+
+- Opening chat from landing page
+- Message input field
+- Send button
+- Close functionality
+
+## Running E2E Tests
+
+```bash
+# Run all E2E tests
+npm run test:e2e
+
+# Run with UI mode
+npm run test:e2e:ui
+
+# Run in headed mode
+npm run test:e2e:headed
+
+# Or use Playwright directly
+npx playwright test
 ```
 
 ## GapGPT API E2E Tests

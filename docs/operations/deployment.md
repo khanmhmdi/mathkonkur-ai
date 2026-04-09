@@ -175,6 +175,7 @@ databases:
 - [ ] Database migrations applied
 - [ ] Build succeeds (`npm run build`)
 - [ ] Tests pass (`npm test`)
+- [ ] E2E tests pass (`npm run test:e2e`)
 - [ ] Static assets optimized
 - [ ] API keys set
 
@@ -264,6 +265,8 @@ jobs:
         run: npm install && cd backend && npm install
       - name: Run tests
         run: npm test && cd backend && npm test
+      - name: Run E2E tests
+        run: npm run test:e2e
 
   deploy-frontend:
     needs: test

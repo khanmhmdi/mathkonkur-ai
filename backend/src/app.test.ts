@@ -12,7 +12,7 @@ describe('App Configuration', () => {
   });
 
   it('CORS headers should be present', async () => {
-    const origin = 'http://localhost:3000';
+    const origin = process.env.FRONTEND_URL || 'http://localhost:5173';
     const res = await request(app)
       .get('/health')
       .set('Origin', origin);

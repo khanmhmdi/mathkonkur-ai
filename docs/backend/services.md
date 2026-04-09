@@ -219,6 +219,8 @@ Deletes conversation and all messages.
 2. Delete conversation (cascades to messages)
 3. Return success
 
+> **Chat History Feature**: The chat service powers the chat history sidebar in the frontend. See [Frontend Chat History Documentation](../frontend/chat-history.md) for UI implementation details.
+
 ## Question Service (`question.service.ts`)
 
 **File**: `backend/src/services/question.service.ts`

@@ -136,6 +136,7 @@ model ChatMessage {
   conversationId String           @map("conversation_id")
   role           String
   content        String
+  imageUrl       String?          @map("image_url")
   createdAt      DateTime         @default(now()) @map("created_at")
   conversation   ChatConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
 
@@ -152,11 +153,16 @@ model ChatMessage {
 | `conversationId` | UUID | @map("conversation_id") | Foreign key to ChatConversation |
 | `role` | String | - | 'user' or 'assistant' |
 | `content` | String | - | Message text |
+| `imageUrl` | String? | @map("image_url") | Optional image URL for messages |
 | `createdAt` | DateTime | @default(now()) | Message time |
 
 ### Relationships
 
 - `conversation` - Many-to-one with ChatConversation (onDelete: Cascade)
+
+### Chat History Feature
+
+The ChatMessage model is used by the chat history feature to store conversation messages. The `imageUrl` field was added to support image attachments in messages. See [Frontend Chat History Documentation](../frontend/chat-history.md) for more details.
 
 ## Question Model
 

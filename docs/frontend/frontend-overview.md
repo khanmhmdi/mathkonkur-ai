@@ -85,6 +85,9 @@ services/
 - LaTeX rendering (via react-markdown + rehype-katex)
 - Image upload support
 - Typing indicator
+- **Chat History Sidebar** - View, select, and delete previous conversations
+- **New Chat** - Start fresh conversations
+- Mobile-responsive sidebar with toggle
 
 **Props**:
 ```typescript
@@ -93,6 +96,12 @@ interface ChatInterfaceProps {
   initialMessage?: string | null;
 }
 ```
+
+**Related Services**:
+- `chatHistoryService.ts` - API service for chat history operations
+
+**See Also**:
+- [Chat History Feature](./chat-history.md) - Detailed documentation
 
 ### QuestionBank (`components/QuestionBank.tsx`)
 

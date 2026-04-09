@@ -108,6 +108,8 @@ Invalidate refresh token session.
 
 **Authentication**: Optional for POST endpoints (visitors allowed with 2-prompt limit), Required for GET/DELETE
 
+> **Chat History Feature**: These endpoints power the chat history sidebar in the frontend, allowing users to view, select, and delete previous conversations. See [Frontend Chat History Documentation](../frontend/chat-history.md) for details.
+
 ### POST /
 
 Create a new conversation. Visitors can create up to 2 conversations before being required to log in.

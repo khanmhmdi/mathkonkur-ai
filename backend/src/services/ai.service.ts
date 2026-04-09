@@ -1,4 +1,4 @@
-import { GoogleGenAI } from '@google/genai';
+import OpenAI from 'openai';
 import { env } from '../config/env';
 import logger from '../config/logger';
 import { AppError } from '../utils/errors';
@@ -6,7 +6,7 @@ import { getSystemPrompt } from '../prompts/tutor.system';
 
 // Define the core types
 export interface Message {
-  role: 'user' | 'model';
+  role: 'user' | 'assistant';
   content: string;
 }
 
@@ -28,15 +28,18 @@ export interface ParsedMathContent {
 }
 
 class AIService {
-  private ai: GoogleGenAI;
-  private readonly MODEL_NAME = 'gemini-2.5-flash';
+  private client: OpenAI;
+  private readonly MODEL_NAME = 'gapgpt-qwen-3.5';
 
   constructor() {
-    this.ai = new GoogleGenAI({ apiKey: env.GEMINI_API_KEY });
+    this.client = new OpenAI({
+      apiKey: env.GAPGPT_API_KEY,
+      baseURL: 'https://api.gapgpt.app/v1'
+    });
   }
 
   /**
-   * Generates a conversational response from Gemini using strict math-tutor framing.
+   * Generates a conversational response from GapGPT using strict math-tutor framing.
    * Includes automated exponential backoff for transient failures (1s, 2s).
    */
   public async generateResponse(
@@ -56,19 +59,30 @@ class AIService {
 
     // 2. Build Context
     const systemInstruction = getSystemPrompt(subject, level);
-    
-    const contents = messages.map(m => ({
-      role: m.role,
-      parts: [{ text: m.content }]
-    }));
 
-    // 3. Handle Image (append to last user message)
+    const apiMessages: OpenAI.Chat.ChatCompletionMessageParam[] = [
+      { role: 'system', content: systemInstruction },
+      ...messages.map(m => ({
+        role: m.role as 'user' | 'assistant',
+        content: m.content
+      }))
+    ];
+
+    // 3. Handle Image (append to last user message as vision content)
     if (image) {
-      for (let i = contents.length - 1; i >= 0; i--) {
-        if (contents[i].role === 'user') {
-          contents[i].parts.push({
-            inlineData: { data: image.data, mimeType: image.mimeType }
-          } as any);
+      for (let i = apiMessages.length - 1; i >= 0; i--) {
+        if (apiMessages[i].role === 'user') {
+          const userMsg = apiMessages[i];
+          apiMessages[i] = {
+            role: 'user',
+            content: [
+              { type: 'text', text: userMsg.content as string },
+              {
+                type: 'image_url',
+                image_url: { url: `data:${image.mimeType};base64,${image.data}` }
+              }
+            ]
+          } as any;
           break;
         }
       }
@@ -86,23 +100,23 @@ class AIService {
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 30000);
 
-        const response = await this.ai.models.generateContent({
+        const response = await this.client.chat.completions.create({
           model: this.MODEL_NAME,
-          contents: contents as any,
-          config: {
-            systemInstruction,
-            maxOutputTokens: 2048
-          }
+          messages: apiMessages,
+          max_tokens: 2048,
+          temperature: 0.7
+        }, {
+          signal: controller.signal
         });
 
         clearTimeout(timeoutId);
 
-        if (!response.text) {
+        if (!response.choices[0]?.message?.content) {
           throw new AppError('AI_INVALID_RESPONSE', 500, true);
         }
 
         const processingTimeMs = Date.now() - startTime;
-        const tokensUsed = response.usageMetadata?.totalTokenCount || 0;
+        const tokensUsed = response.usage?.total_tokens || 0;
 
         // Cost Tracking & Observability
         logger.info({
@@ -115,12 +129,13 @@ class AIService {
         }, 'AI Generation Complete');
 
         // Light check for Persian characters
-        if (!/[\\u0600-\\u06FF]/.test(response.text)) {
+        const responseText = response.choices[0].message.content;
+        if (!/[\u0600-\u06FF]/.test(responseText)) {
           logger.warn('AI response does not contain Persian text as instructed');
         }
 
         return {
-          content: response.text,
+          content: responseText,
           tokensUsed,
           modelVersion: this.MODEL_NAME,
           processingTimeMs

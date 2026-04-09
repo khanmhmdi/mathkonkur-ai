@@ -7,7 +7,7 @@ describe('Environment Configuration', () => {
     expect(env.PORT).toBeDefined();
     expect(env.DATABASE_URL).toBeDefined();
     expect(env.JWT_SECRET).toBeDefined();
-    expect(env.GEMINI_API_KEY).toBeDefined();
+    expect(env.GAPGPT_API_KEY).toBeDefined();
   });
 
   it('should have a valid DATABASE_URL', () => {

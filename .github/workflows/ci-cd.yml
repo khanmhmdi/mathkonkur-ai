@@ -1,0 +1,308 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+env:
+  NODE_VERSION: '20'
+
+jobs:
+  # ==========================================
+  # TEST JOB - Runs all tests
+  # ==========================================
+  test:
+    name: Test Suite
+    runs-on: ubuntu-latest
+    
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: test
+          POSTGRES_PASSWORD: test
+          POSTGRES_DB: mathkonkur_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      # Install frontend dependencies
+      - name: Install Frontend Dependencies
+        run: npm ci
+
+      # Install backend dependencies
+      - name: Install Backend Dependencies
+        working-directory: ./backend
+        run: npm ci
+
+      # Setup backend environment for testing
+      - name: Setup Backend Test Environment
+        working-directory: ./backend
+        run: |
+          cp .env.example .env
+          echo "NODE_ENV=test" >> .env
+          echo "PORT=4000" >> .env
+          echo "DATABASE_URL=postgresql://test:test@localhost:5432/mathkonkur_test?schema=public" >> .env
+          echo "JWT_SECRET=test-jwt-secret-min-32-chars-long-enough" >> .env
+          echo "JWT_REFRESH_SECRET=test-refresh-secret-min-32-chars-long" >> .env
+          echo "GAPGPT_API_KEY=sk-test-key" >> .env
+          echo "FRONTEND_URL=http://localhost:5173" >> .env
+
+      # Generate Prisma client
+      - name: Generate Prisma Client
+        working-directory: ./backend
+        run: npx prisma generate
+
+      # Run database migrations
+      - name: Run Database Migrations
+        working-directory: ./backend
+        run: npx prisma migrate deploy
+
+      # Run frontend tests
+      - name: Run Frontend Tests
+        run: npm test -- --passWithNoTests
+
+      # Run backend tests
+      - name: Run Backend Tests
+        working-directory: ./backend
+        run: npm test -- --passWithNoTests
+
+  # ==========================================
+  # BUILD JOB - Builds the application
+  # ==========================================
+  build:
+    name: Build Application
+    runs-on: ubuntu-latest
+    needs: test
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      # Install frontend dependencies
+      - name: Install Frontend Dependencies
+        run: npm ci
+
+      # Install backend dependencies
+      - name: Install Backend Dependencies
+        working-directory: ./backend
+        run: npm ci
+
+      # Build frontend
+      - name: Build Frontend
+        run: npm run build
+
+      # Build backend
+      - name: Build Backend
+        working-directory: ./backend
+        run: npm run build
+
+      # Upload build artifacts
+      - name: Upload Frontend Build
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-build
+          path: dist/
+
+      - name: Upload Backend Build
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-build
+          path: backend/dist/
+
+  # ==========================================
+  # E2E TESTS - Playwright end-to-end tests
+  # ==========================================
+  e2e-tests:
+    name: E2E Tests
+    runs-on: ubuntu-latest
+    needs: build
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install Frontend Dependencies
+        run: npm ci
+
+      - name: Install Playwright Browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: Run Playwright Tests
+        run: npm run test:e2e
+        continue-on-error: true
+
+      - name: Upload Playwright Report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 30
+
+  # ==========================================
+  # DEPLOY FRONTEND TO VERCEL (Production)
+  # ==========================================
+  deploy-frontend-production:
+    name: Deploy Frontend to Vercel (Production)
+    runs-on: ubuntu-latest
+    needs: [test, build, e2e-tests]
+    if: github.ref == 'refs/heads/main'
+    
+    environment:
+      name: production-frontend
+      url: ${{ steps.deploy.outputs.url }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Vercel CLI
+        run: npm i -g vercel@latest
+
+      - name: Pull Vercel Environment Information
+        run: vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
+
+      - name: Build Project Artifacts
+        run: vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
+
+      - name: Deploy Project Artifacts to Vercel
+        id: deploy
+        run: |
+          vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }} > deploy-url.txt
+          echo "url=$(cat deploy-url.txt)" >> $GITHUB_OUTPUT
+
+  # ==========================================
+  # DEPLOY FRONTEND TO VERCEL (Preview)
+  # ==========================================
+  deploy-frontend-preview:
+    name: Deploy Frontend to Vercel (Preview)
+    runs-on: ubuntu-latest
+    needs: [test, build]
+    if: github.ref == 'refs/heads/develop'
+    
+    environment:
+      name: preview-frontend
+      url: ${{ steps.deploy.outputs.url }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Vercel CLI
+        run: npm i -g vercel@latest
+
+      - name: Pull Vercel Environment Information
+        run: vercel pull --yes --environment=preview --token=${{ secrets.VERCEL_TOKEN }}
+
+      - name: Build Project Artifacts
+        run: vercel build --token=${{ secrets.VERCEL_TOKEN }}
+
+      - name: Deploy Project Artifacts to Vercel
+        id: deploy
+        run: |
+          vercel deploy --prebuilt --token=${{ secrets.VERCEL_TOKEN }} > deploy-url.txt
+          echo "url=$(cat deploy-url.txt)" >> $GITHUB_OUTPUT
+
+  # ==========================================
+  # DEPLOY BACKEND TO RAILWAY (Production)
+  # ==========================================
+  deploy-backend-production:
+    name: Deploy Backend to Railway (Production)
+    runs-on: ubuntu-latest
+    needs: [test, build, e2e-tests]
+    if: github.ref == 'refs/heads/main'
+    
+    environment:
+      name: production-backend
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Railway CLI
+        run: npm i -g @railway/cli
+
+      - name: Deploy to Railway
+        working-directory: ./backend
+        run: railway up --service=mathkonkur-backend --environment=production
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+
+  # ==========================================
+  # DEPLOY BACKEND TO RAILWAY (Staging)
+  # ==========================================
+  deploy-backend-staging:
+    name: Deploy Backend to Railway (Staging)
+    runs-on: ubuntu-latest
+    needs: [test, build]
+    if: github.ref == 'refs/heads/develop'
+    
+    environment:
+      name: staging-backend
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Railway CLI
+        run: npm i -g @railway/cli
+
+      - name: Deploy to Railway (Staging)
+        working-directory: ./backend
+        run: railway up --service=mathkonkur-backend --environment=staging
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+
+  # ==========================================
+  # SECURITY SCAN
+  # ==========================================
+  security-scan:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Run npm audit
+        run: npm audit --audit-level=moderate
+        continue-on-error: true
+
+      - name: Run Backend npm audit
+        working-directory: ./backend
+        run: npm audit --audit-level=moderate
+        continue-on-error: true

@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, useNavigate, useLocation } from 'react-router-dom';
-import { Navbar, Hero } from './components/Landing';
+import { Navbar, Hero, NavbarProps } from './components/Landing';
 import { ChatInterface } from './components/ChatInterface';
 import { QuestionBank } from './components/QuestionBank';
 import { AuthPage } from './components/AuthPage';
 import { AuthTestComponent } from './components/AuthTestComponent';
+import { PricingPage } from './components/PricingPage';
 import { AnimatePresence } from 'motion/react';
 import { Sigma } from 'lucide-react';
 import { Question } from './data/questions';
@@ -26,15 +27,16 @@ function AppContent() {
     setIsChatOpen(true);
   };
 
+  const navbarProps: NavbarProps = {
+    onOpenChat: () => {
+      setInitialMessage(null);
+      setIsChatOpen(true);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-white font-sans text-slate-900 selection:bg-indigo-100 selection:text-indigo-900" dir="rtl">
-      <Navbar />
-      <div className="bg-slate-50 border-b border-slate-100 py-2 mt-16">
-        <div className="max-w-7xl mx-auto px-4 text-center text-slate-700 text-xs">
-          ذخیره نشان‌ها در مرورگر شما انجام می‌شود. برای استفاده از PostgreSQL، بک‌اند خود را با APIهای مرتبط بسازید.
-        </div>
-      </div>
-
+      <Navbar {...navbarProps} />
       <Routes>
         <Route path="/" element={
           <main>
@@ -120,6 +122,7 @@ function AppContent() {
           />
         } />
         <Route path="/auth" element={<AuthPage />} />
+        <Route path="/pricing" element={<PricingPage />} />
         <Route path="/auth-test" element={<AuthTestComponent />} />
       </Routes>
 

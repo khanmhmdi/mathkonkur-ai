@@ -16,8 +16,8 @@ const envSchema = z.object({
   JWT_REFRESH_SECRET: z.string().min(32, {
     message: 'JWT_REFRESH_SECRET must be at least 32 characters long',
   }),
-  GEMINI_API_KEY: z.string().min(1, {
-    message: 'GEMINI_API_KEY must not be empty',
+  GAPGPT_API_KEY: z.string().min(1, {
+    message: 'GAPGPT_API_KEY must not be empty',
   }),
   FRONTEND_URL: z.string().url(),
 });

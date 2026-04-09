@@ -107,3 +107,46 @@ Project infrastructure setup.
 - 🛡️ **Security**: Password hashing, HttpOnly cookies, CORS protection
 - 📱 **Mobile Ready**: Optimized for all device sizes
 - ⚡ **Auto-Refresh**: Seamless token renewal without user intervention
+
+## Deployment
+
+### Quick Deploy
+
+The project is configured for CI/CD deployment with GitHub Actions:
+
+| Platform | Purpose | Cost |
+|----------|---------|------|
+| **Vercel** | Frontend hosting | Free |
+| **Railway** | Backend + Database | ~$5/month |
+| **Render** | Alternative all-in-one | Free - $7/month |
+
+### Deployment Steps
+
+1. **Push to GitHub:**
+   ```bash
+   git push origin main
+   ```
+
+2. **Setup Secrets** (in GitHub Settings → Secrets):
+   - `VERCEL_TOKEN` - From [vercel.com/account/tokens](https://vercel.com/account/tokens)
+   - `RAILWAY_TOKEN` - From [railway.app/account/tokens](https://railway.app/account/tokens)
+   - `GAPGPT_API_KEY` - From [api.gapgpt.app](https://api.gapgpt.app)
+
+3. **Deploy:**
+   - Push to `main` branch → Auto-deploys to production
+   - Push to `develop` branch → Auto-deploys to staging
+
+### Manual Deployment
+
+```bash
+# Using Docker
+docker-compose up -d
+
+# Using Vercel CLI
+vercel --prod
+
+# Using Railway CLI
+cd backend && railway up
+```
+
+**📖 Full Deployment Guide:** See [`docs/operations/github-deployment-guide.md`](docs/operations/github-deployment-guide.md)

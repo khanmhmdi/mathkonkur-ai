@@ -137,7 +137,7 @@ Scenario: Answering questions tracks progress
 ## Final Security & Performance Checklist
 
 1. **Security**:
-   - [ ] No `GEMINI_API_KEY` in frontend build artifacts.
+   - [ ] No `GAPGPT_API_KEY` in frontend build artifacts.
    - [ ] Refresh token cookie has `HttpOnly` and `Secure` flags.
    - [ ] CORS is restricted to the specific frontend production domain.
 

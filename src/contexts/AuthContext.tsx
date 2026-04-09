@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useRef, ReactNode } from 'react';
 import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
-import { User, AuthState, LoginCredentials, RegisterData, AuthResponse } from '../types/auth';
+import { User, AuthState, LoginCredentials, RegisterData, AuthResponse, RefreshResponse, UserProfileResponse } from '../types/auth';
 
 // API Configuration
 const API_URL = 'http://localhost:4000/api';
@@ -74,7 +74,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.log('🔍 AuthContext: Making POST request to /auth/login');
       const response = await axiosInstance.post<AuthResponse>('/auth/login', credentials);
       console.log('🔍 AuthContext: Login response received', response.data);
-      const { user, accessToken } = response.data;
+      const { user, accessToken } = response.data.data;
       console.log('🔍 AuthContext: Setting authenticated state', { user, accessToken });
       setAuthenticated(user, accessToken);
     } catch (error: any) {
@@ -88,7 +88,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const register = async (data: RegisterData): Promise<void> => {
     try {
       const response = await axiosInstance.post<AuthResponse>('/auth/register', data);
-      const { user, accessToken } = response.data;
+      const { user, accessToken } = response.data.data;
       setAuthenticated(user, accessToken);
     } catch (error: any) {
       clearAuth();
@@ -111,8 +111,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Refresh token method
   const refreshToken = async (): Promise<string | null> => {
     try {
-      const response = await axiosInstance.post<{ accessToken: string }>('/auth/refresh');
-      const { accessToken } = response.data;
+      const response = await axiosInstance.post<RefreshResponse>('/auth/refresh');
+      const { accessToken } = response.data.data;
       
       localStorage.setItem('accessToken', accessToken);
       updateState({ accessToken });
@@ -134,8 +134,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       try {
-        const response = await axiosInstance.get<{ user: User }>('/user/me');
-        const { user } = response.data;
+        const response = await axiosInstance.get<UserProfileResponse>('/user/me');
+        const { user } = response.data.data;
         
         setState(prev => ({
           ...prev,
@@ -165,8 +165,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const requestInterceptor = axiosInstance.interceptors.request.use(
       (config: InternalAxiosRequestConfig) => {
         const token = localStorage.getItem('accessToken');
+        console.log('🔐 Request Interceptor:', {
+          url: config.url,
+          hasToken: !!token,
+          tokenLength: token?.length || 0
+        });
         if (token) {
           config.headers.Authorization = `Bearer ${token}`;
+          console.log('🔐 Token added to Authorization header');
+        } else {
+          console.warn('🔐 WARNING: No token found in localStorage!');
         }
         return config;
       },

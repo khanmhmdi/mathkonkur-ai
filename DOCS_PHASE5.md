@@ -15,16 +15,16 @@ The prompt engineering layer separates AI's persona and logic from the business 
 ---
 
 ## 5.2 AI Service (`ai.service.ts`)
-The technical integration with Google's Gemini LLM.
-- **Client Architecture**: Singleton wrapper for `@google/genai` utilizing `GEMINI_API_KEY` from the secure environment.
+The technical integration with GapGPT LLM using OpenAI-compatible API.
+- **Client Architecture**: Singleton wrapper for OpenAI SDK utilizing `GAPGPT_API_KEY` from the secure environment.
 - **Resilient Execution Loop**:
   - **3-Attempt Policy**: Initial call plus 2 retries for transient failures.
   - **Exponential Backoff**: 1s and 2s delays between retries to mitigate rate-limiting.
   - **Dynamic Timeout**: Hard 30-second `AbortController` pulse to prevent dangling requests.
 - **Intelligent Error Mapping**:
   - **429 (Quota)**: Fails fast without retrying.
-  - **400 (Safety Block)**: Gracefully handles content blocks by Google's safety filters.
-  - **504 (Gateway Timeout)**: Specifically surfaces an "AI TO_LONG" error for the controller to handle.
+  - **400 (Safety Block)**: Gracefully handles content blocks by GapGPT's safety filters.
+  - **504 (Gateway Timeout)**: Specifically surfaces an "AI_TIMEOUT" error for the controller to handle.
 - **Mathematical Extraction Engine**:
   - Uses Regex to identify and isolate display and inline LaTeX.
   - **Safety Scrutiny**: Validates balanced braces `{}` and blacklists dangerous TeX commands (e.g., `\write`, `\input`).

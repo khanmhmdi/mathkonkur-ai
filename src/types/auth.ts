@@ -26,6 +26,23 @@ export interface RegisterData {
 }
 
 export interface AuthResponse {
-  user: User;
-  accessToken: string;
+  success: true;
+  data: {
+    user: User;
+    accessToken: string;
+  };
+}
+
+export interface RefreshResponse {
+  success: true;
+  data: {
+    accessToken: string;
+  };
+}
+
+export interface UserProfileResponse {
+  success: true;
+  data: {
+    user: User;
+  };
 }

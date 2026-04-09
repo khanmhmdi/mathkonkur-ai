@@ -1,13 +1,15 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, User, Bot, Loader2, X, ChevronDown, Sigma, Image as ImageIcon, Trash2 } from 'lucide-react';
+import { Send, User, Bot, Loader2, X, ChevronDown, Sigma, Image as ImageIcon, Trash2, History, Plus, MessageSquare, Menu } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
 import 'katex/dist/katex.min.css';
 import { motion, AnimatePresence } from 'motion/react';
 import { api } from '../services/api';
+import { useAuth } from '../contexts/AuthContext';
 import { cn } from '../utils/cn';
 import { useNavigate } from 'react-router-dom';
+import chatHistoryService, { ChatConversation } from '../services/chatHistoryService';
 
 interface Message {
   role: 'user' | 'model';
@@ -21,15 +23,16 @@ const SUBJECTS = [
   "مثلثات", 
   "هندسه تحلیلی", 
   "بردارها و هندسه", 
-  "حسابان (حد، مشتق، انتگرال)", 
+  "حسابان",
   "گسسته و احتمال"
 ];
 
 const LEVELS = [
-  "ریاضی فیزیک (تخصصی)", "علوم تجربی (ریاضی عمومی)", "انسانی و معارف"
+  "ریاضی فیزیک", "علوم تجربی", "انسانی و معارف"
 ];
 
 export const ChatInterface = ({ onClose, initialMessage }: { onClose: () => void, initialMessage?: string | null }) => {
+  const { accessToken, isAuthenticated } = useAuth();
   const [messages, setMessages] = useState<Message[]>([
     { role: 'model', text: "سلام! من MathKonkur AI هستم. آماده‌ام تا در حل سخت‌ترین تست‌های ریاضی و درک عمیق مفاهیم حسابی و هندسی بهت کمک کنم. کدوم مبحث رو شروع کنیم؟" }
   ]);
@@ -41,6 +44,10 @@ export const ChatInterface = ({ onClose, initialMessage }: { onClose: () => void
   const [level, setLevel] = useState(LEVELS[0]);
   const [showSettings, setShowSettings] = useState(false);
   const [selectedImage, setSelectedImage] = useState<{ data: string; mimeType: string } | null>(null);
+  const [visitorLimitExceeded, setVisitorLimitExceeded] = useState(false);
+  const [conversations, setConversations] = useState<ChatConversation[]>([]);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isLoadingConversations, setIsLoadingConversations] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -53,9 +60,79 @@ export const ChatInterface = ({ onClose, initialMessage }: { onClose: () => void
     }
   }, [messages]);
 
+  // Load conversations for authenticated users
+  useEffect(() => {
+    if (isAuthenticated) {
+      loadConversations();
+    }
+  }, [isAuthenticated]);
+
+  const loadConversations = async () => {
+    if (!isAuthenticated) return;
+    setIsLoadingConversations(true);
+    try {
+      const data = await chatHistoryService.getConversations(1, 50);
+      setConversations(data.conversations);
+    } catch (error) {
+      console.error('Failed to load conversations:', error);
+    } finally {
+      setIsLoadingConversations(false);
+    }
+  };
+
+  const startNewChat = () => {
+    setConversationId(null);
+    setMessages([{ role: 'model', text: "سلام! من MathKonkur AI هستم. آماده‌ام تا در حل سخت‌ترین تست‌های ریاضی و درک عمیق مفاهیم حسابی و هندسی بهت کمک کنم. کدوم مبحث رو شروع کنیم؟" }]);
+    setIsSidebarOpen(false);
+  };
+
+  const selectConversation = async (convId: string) => {
+    setConversationId(convId);
+    setIsLoadingHistory(true);
+    try {
+      const data = await chatHistoryService.getConversationHistory(convId);
+      setMessages(data.messages.map(m => ({
+        role: m.role === 'assistant' ? 'model' : m.role,
+        text: m.content
+      })));
+      const conv = conversations.find(c => c.id === convId);
+      if (conv) {
+        setSubject(conv.subject);
+        setLevel(conv.level);
+      }
+    } catch (error) {
+      console.error('Failed to load conversation history:', error);
+    } finally {
+      setIsLoadingHistory(false);
+      setIsSidebarOpen(false);
+    }
+  };
+
+  const handleDeleteConversation = async (e: React.MouseEvent, convId: string) => {
+    e.stopPropagation();
+    if (confirm('آیا از حذف این گفتگو اطمینان دارید؟')) {
+      try {
+        await chatHistoryService.deleteConversation(convId);
+        await loadConversations();
+        if (conversationId === convId) {
+          startNewChat();
+        }
+      } catch (error) {
+        console.error('Failed to delete conversation:', error);
+      }
+    }
+  };
+
   // Create a new conversation
   const createConversation = async (firstMessage: string, image?: { data: string; mimeType: string }) => {
     try {
+      console.log('🔐 ChatInterface: Creating conversation', {
+        accessToken: accessToken ? `${accessToken.substring(0, 20)}...` : 'NOT SET',
+        subject,
+        level,
+        messageLength: firstMessage.length
+      });
+      
       const res = await api.post<any>('/chat', {
         subject,
         level,
@@ -63,10 +140,18 @@ export const ChatInterface = ({ onClose, initialMessage }: { onClose: () => void
         image: image ? `data:${image.mimeType};base64,${image.data}` : undefined
       });
       const data = res.data.data;
-      setConversationId(data.id);
+      setConversationId(data.conversation.id);
+      if (isAuthenticated) {
+        loadConversations();
+      }
       return data;
     } catch (error: any) {
       console.error("Create Chat Error:", error);
+      console.error("Error details:", {
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        data: error.response?.data
+      });
       throw error;
     }
   };
@@ -81,12 +166,19 @@ export const ChatInterface = ({ onClose, initialMessage }: { onClose: () => void
         setIsSending(true);
         try {
           const conv = await createConversation(initialMessage, selectedImage || undefined);
-          if (conv.initialResponse) {
-            setMessages(prev => [...prev, { role: 'model', text: conv.initialResponse }]);
+          if (conv.message?.content) {
+            setMessages(prev => [...prev, { role: 'model', text: conv.message.content }]);
           }
           if (selectedImage) setSelectedImage(null);
         } catch (error: any) {
-          setMessages(prev => [...prev, { role: 'model', text: error.message || "خطایی در برقراری ارتباط با سرور رخ داد." }]);
+          const errorCode = error.response?.data?.error?.code;
+          const status = error.response?.status;
+          if (errorCode === 'VISITOR_PROMPT_LIMIT_EXCEEDED' || status === 429) {
+            setVisitorLimitExceeded(true);
+            setMessages(prev => [...prev, { role: 'model', text: 'برای ادامه در سایت ثبت نام کنید' }]);
+          } else {
+            setMessages(prev => [...prev, { role: 'model', text: error.message || "خطایی در برقراری ارتباط با سرور رخ داد." }]);
+          }
         } finally {
           setIsSending(false);
         }
@@ -111,12 +203,12 @@ export const ChatInterface = ({ onClose, initialMessage }: { onClose: () => void
       if (!currentId) {
         const conv = await createConversation(userMessage, currentImage || undefined);
         // If createConversation already returned the AI reply (standard in my backend /chat flow)
-        if (conv.initialResponse) {
-          setMessages(prev => [...prev, { role: 'model', text: conv.initialResponse }]);
+        if (conv.message?.content) {
+          setMessages(prev => [...prev, { role: 'model', text: conv.message.content }]);
           setIsSending(false);
           return;
         }
-        currentId = conv.id;
+        currentId = conv.conversation.id;
       }
 
       // Send to existing chat
@@ -125,10 +217,17 @@ export const ChatInterface = ({ onClose, initialMessage }: { onClose: () => void
         image: currentImage ? `data:${currentImage.mimeType};base64,${currentImage.data}` : undefined
       });
 
-      setMessages(prev => [...prev, { role: 'model', text: res.data.data.content }]);
+      setMessages(prev => [...prev, { role: 'model', text: res.data.data.message.content }]);
     } catch (error: any) {
       console.error(error);
-      setMessages(prev => [...prev, { role: 'model', text: error.message || "خطایی رخ داد. لطفاً دوباره تلاش کنید." }]);
+      const errorCode = error.response?.data?.error?.code;
+      const status = error.response?.status;
+      if (errorCode === 'VISITOR_PROMPT_LIMIT_EXCEEDED' || status === 429) {
+        setVisitorLimitExceeded(true);
+        setMessages(prev => [...prev, { role: 'model', text: 'برای ادامه در سایت ثبت نام کنید' }]);
+      } else {
+        setMessages(prev => [...prev, { role: 'model', text: error.message || "خطایی رخ داد. لطفاً دوباره تلاش کنید." }]);
+      }
     } finally {
       setIsSending(false);
     }
@@ -156,9 +255,96 @@ export const ChatInterface = ({ onClose, initialMessage }: { onClose: () => void
       className="fixed inset-0 z-[60] bg-white flex flex-col md:inset-4 md:rounded-3xl md:shadow-2xl md:border md:border-slate-200 overflow-hidden text-right"
       dir="rtl"
     >
-      {/* Header */}
+      <div className="flex flex-1 overflow-hidden relative">
+        {/* Sidebar */}
+        <AnimatePresence>
+          {(isSidebarOpen || (typeof window !== 'undefined' && window.innerWidth >= 768)) && (
+            <motion.div
+              initial={{ x: 300 }}
+              animate={{ x: 0 }}
+              exit={{ x: 300 }}
+              className={cn(
+                "absolute inset-y-0 right-0 z-50 w-72 bg-slate-50 border-l border-slate-200 flex flex-col transition-all duration-300 md:relative md:translate-x-0",
+                !isSidebarOpen && "hidden md:flex"
+              )}
+            >
+              <div className="p-4 border-b border-slate-200 flex items-center justify-between">
+                <h3 className="font-bold text-slate-900 flex items-center gap-2">
+                  <History className="w-5 h-5 text-indigo-600" />
+                  تاریخچه گفتگوها
+                </h3>
+                <button 
+                  onClick={() => setIsSidebarOpen(false)}
+                  className="md:hidden p-1 hover:bg-slate-200 rounded-lg"
+                >
+                  <X className="w-5 h-5 text-slate-500" />
+                </button>
+              </div>
+              
+              <div className="p-4">
+                <button 
+                  onClick={startNewChat}
+                  className="w-full py-3 px-4 bg-white border border-slate-200 rounded-xl text-slate-700 font-medium flex items-center justify-center gap-2 hover:border-indigo-500 hover:text-indigo-600 transition-all shadow-sm"
+                >
+                  <Plus className="w-5 h-5" />
+                  گفتگوی جدید
+                </button>
+              </div>
+
+              <div className="flex-1 overflow-y-auto px-2 space-y-1">
+                {isLoadingConversations ? (
+                  <div className="p-8 text-center">
+                    <Loader2 className="w-6 h-6 text-indigo-600 animate-spin mx-auto" />
+                  </div>
+                ) : conversations.length === 0 ? (
+                  <div className="p-8 text-center">
+                    <MessageSquare className="w-12 h-12 text-slate-200 mx-auto mb-3" />
+                    <p className="text-xs text-slate-400">هنوز گفتگویی ندارید</p>
+                  </div>
+                ) : (
+                  conversations.map(conv => (
+                    <div
+                      key={conv.id}
+                      onClick={() => selectConversation(conv.id)}
+                      className={cn(
+                        "group relative p-3 rounded-xl cursor-pointer transition-all flex items-start gap-3",
+                        conversationId === conv.id 
+                          ? "bg-indigo-50 text-indigo-700" 
+                          : "hover:bg-slate-100 text-slate-600"
+                      )}
+                    >
+                      <MessageSquare className={cn("w-5 h-5 mt-0.5 flex-shrink-0", conversationId === conv.id ? "text-indigo-600" : "text-slate-400")} />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium truncate">{conv.title || 'گفتگوی جدید'}</p>
+                        <p className="text-[10px] opacity-60 mt-0.5">
+                          {new Date(conv.updatedAt).toLocaleDateString('fa-IR')}
+                        </p>
+                      </div>
+                      <button 
+                        onClick={(e) => handleDeleteConversation(e, conv.id)}
+                        className="opacity-0 group-hover:opacity-100 p-1 hover:bg-red-50 hover:text-red-600 rounded-lg transition-all"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ))
+                )}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Main Chat Area */}
+        <div className="flex-1 flex flex-col min-w-0 bg-white">
+          {/* Header */}
       <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-white">
         <div className="flex items-center gap-3">
+          <button 
+            onClick={() => setIsSidebarOpen(true)}
+            className="md:hidden p-2 hover:bg-slate-100 rounded-xl transition-colors text-slate-500"
+          >
+            <Menu className="w-6 h-6" />
+          </button>
           <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center">
             <Sigma className="w-6 h-6 text-white" />
           </div>
@@ -359,9 +545,31 @@ export const ChatInterface = ({ onClose, initialMessage }: { onClose: () => void
             </div>
           </div>
         </div>
+        
+        {visitorLimitExceeded && (
+          <div className="px-4 pb-4">
+            <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 text-center">
+              <p className="text-amber-800 font-bold mb-3">برای ادامه در سایت ثبت نام کنید</p>
+              <div className="flex gap-3 justify-center">
+                <button
+                  onClick={() => {
+                    onClose();
+                    navigate('/auth');
+                  }}
+                  className="px-4 py-2 bg-indigo-600 text-white rounded-xl font-bold text-sm hover:bg-indigo-700 transition-colors"
+                >
+                  ورود / ثبت نام
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+        
         <p className="text-center text-[10px] text-slate-400 mt-3">
           MathKonkur یک هوش مصنوعی است. برای اطمینان، محاسبات پیچیده را دوباره چک کنید.
         </p>
+      </div>
+        </div>
       </div>
     </motion.div>
   );

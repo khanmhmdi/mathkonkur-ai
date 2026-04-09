@@ -14,6 +14,7 @@ model User {
   passwordHash  String             @map("password_hash")
   name          String?
   level         String             @default("ریاضی فیزیک")
+  promptCount   Int                @default(0) @map("prompt_count")
   createdAt     DateTime           @default(now()) @map("created_at")
   updatedAt     DateTime           @updatedAt @map("updated_at")
   lastLoginAt   DateTime?          @map("last_login_at")
@@ -58,6 +59,7 @@ model ChatMessage {
   conversationId String           @map("conversation_id")
   role           String
   content        String
+  imageUrl       String?          @map("image_url")
   createdAt      DateTime         @default(now()) @map("created_at")
   conversation   ChatConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
 

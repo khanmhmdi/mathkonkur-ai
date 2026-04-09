@@ -26,7 +26,7 @@ Phase 0 focuses on initializing the project infrastructure, focusing on the back
   - `DATABASE_URL` (PostgreSQL)
   - `REDIS_URL`
   - `JWT_SECRET` & `JWT_REFRESH_SECRET`
-  - `GEMINI_API_KEY`
+  - `GAPGPT_API_KEY`
   - `FRONTEND_URL`
 
 - Implemented safe environment variable parsing and validation using Zod in `src/config/env.ts`.
@@ -48,7 +48,7 @@ Phase 0 focuses on initializing the project infrastructure, focusing on the back
   - `PORT`: Automatically transformed from string to number (default: 4000).
   - `DATABASE_URL`: Validated as a URL starting with `postgresql://`.
   - `JWT_SECRET` & `JWT_REFRESH_SECRET`: Minimum length of 32 characters for security.
-  - `GEMINI_API_KEY`: Non-empty string validation.
+  - `GAPGPT_API_KEY`: Non-empty string validation.
 
 - **Fail-Fast mechanism**: The application will now log a clear error and exit immediately if any environment variable is missing or invalid at startup.
 

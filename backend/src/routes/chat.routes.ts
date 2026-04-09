@@ -1,5 +1,6 @@
 import { Router } from 'express';
-import { authenticate } from '../middleware/auth.middleware';
+import { authenticate, optionalAuth } from '../middleware/auth.middleware';
+import { visitorPromptLimit } from '../middleware/visitor-limit.middleware';
 import { validate } from '../middleware/validate.middleware';
 import { z } from 'zod';
 import { chatController } from '../controllers/chat.controller';
@@ -27,18 +28,24 @@ const createConversationSchema = z.object({
   level: z.enum(['ریاضی فیزیک', 'علوم تجربی', 'انسانی و معارف'], {
     errorMap: () => ({ message: 'سطح انتخابی معتبر نیست' })
   }),
-  image: z.object({
-    data: z.string().min(1, 'داده تصویر نمی‌تواند خالی باشد'),
-    mimeType: z.enum(['image/jpeg', 'image/png', 'image/webp'])
-  }).optional()
+  image: z.union([
+    z.object({
+      data: z.string().min(1, 'داده تصویر نمی‌تواند خالی باشد'),
+      mimeType: z.enum(['image/jpeg', 'image/png', 'image/webp'])
+    }),
+    z.string()
+  ]).optional()
 });
 
 const sendMessageSchema = z.object({
   content: z.string().min(1, 'محتوای پیام نمی‌تواند خالی باشد').max(4000, 'پیام نباید بیشتر از ۴۰۰۰ حرف باشد'),
-  image: z.object({
-    data: z.string().min(1),
-    mimeType: z.enum(['image/jpeg', 'image/png', 'image/webp'])
-  }).optional()
+  image: z.union([
+    z.object({
+      data: z.string().min(1),
+      mimeType: z.enum(['image/jpeg', 'image/png', 'image/webp'])
+    }),
+    z.string()
+  ]).optional()
 });
 
 const paginationSchema = z.object({
@@ -54,18 +61,18 @@ const conversationIdSchema = z.object({
 // Routes
 // ============================================================
 
-// POST /api/chat — Create a new conversation
+// POST /api/chat — Create a new conversation (visitors allowed with limit)
 router.post(
   '/',
-  authenticate,
+  visitorPromptLimit,
   validate(createConversationSchema),
   chatController.createConversation
 );
 
-// POST /api/chat/:conversationId/message — Send a message
+// POST /api/chat/:conversationId/message — Send a message (visitors allowed with limit)
 router.post(
   '/:conversationId/message',
-  authenticate,
+  visitorPromptLimit,
   validate(sendMessageSchema),
   chatController.sendMessage
 );

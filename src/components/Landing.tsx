@@ -1,9 +1,13 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { GraduationCap, BookOpen, Sparkles, MessageSquare, Sigma, LogIn, LogOut } from 'lucide-react';
+import { GraduationCap, BookOpen, Sparkles, MessageSquare, Sigma, LogIn, LogOut, MessageCircle } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
-export const Navbar = () => {
+export interface NavbarProps {
+  onOpenChat?: () => void;
+}
+
+export const Navbar = ({ onOpenChat }: NavbarProps) => {
   const { isAuthenticated, user, logout } = useAuth();
 
   return (
@@ -16,8 +20,16 @@ export const Navbar = () => {
             </div>
             <span className="text-xl font-bold text-slate-900 tracking-tight">MathKonkur</span>
           </Link>
-          <div className="hidden md:flex items-center gap-8">
-            <a href="#features" className="text-sm font-medium text-slate-600 hover:text-indigo-600 transition-colors">ویژگی‌ها</a>
+          <div className="hidden md:flex items-center gap-4">
+            {onOpenChat && (
+              <button
+                onClick={onOpenChat}
+                className="flex items-center gap-2 text-sm font-medium text-indigo-600 hover:text-indigo-700 transition-colors bg-indigo-50 px-3 py-2 rounded-full"
+              >
+                <MessageCircle className="w-4 h-4" />
+                گفتگو با هوش مصنوعی
+              </button>
+            )}
             <Link 
               to="/bank"
               className="text-sm font-medium text-slate-600 hover:text-indigo-600 transition-colors"

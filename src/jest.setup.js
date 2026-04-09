@@ -28,3 +28,12 @@ Object.defineProperty(window, 'matchMedia', {
 
 // Mock fetch globally
 global.fetch = jest.fn();
+
+// Mock TextEncoder/TextDecoder for jsdom
+global.TextEncoder = class TextEncoder {
+  encode() { return new Uint8Array(0); }
+};
+
+global.TextDecoder = class TextDecoder {
+  decode() { return ''; }
+};

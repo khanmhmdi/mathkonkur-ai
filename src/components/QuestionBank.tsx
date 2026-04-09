@@ -18,6 +18,10 @@ export const QuestionBank = ({ onClose, onAskAI }: { onClose: () => void, onAskA
   const [favorites, setFavorites] = useState<string[]>([]);
   const [showOnlyFavorites, setShowOnlyFavorites] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
+  const [submittedAnswer, setSubmittedAnswer] = useState<number | null>(null);
+  const [isCorrect, setIsCorrect] = useState<boolean | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     loadInitialData();
@@ -74,6 +78,31 @@ export const QuestionBank = ({ onClose, onAskAI }: { onClose: () => void, onAskA
       });
     } catch (error) {
       console.error("Failed to record attempt", error);
+    }
+  };
+
+  const handleAnswerSelect = async (answerIndex: number) => {
+    if (submittedAnswer !== null || isSubmitting) return;
+    
+    setSelectedAnswer(answerIndex);
+    setIsSubmitting(true);
+    
+    try {
+      const response = await api.post<any>(`/questions/${selectedQuestion.id}/submit`, {
+        answerIndex,
+        timeSpentSeconds: 60
+      });
+      
+      const result = response.data.data;
+      setSubmittedAnswer(answerIndex);
+      setIsCorrect(result.isCorrect);
+    } catch (error) {
+      console.error("Failed to submit answer:", error);
+      // Fallback to local check if API fails
+      setSubmittedAnswer(answerIndex);
+      setIsCorrect(answerIndex === selectedQuestion.correctAnswer);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -195,7 +224,9 @@ export const QuestionBank = ({ onClose, onAskAI }: { onClose: () => void, onAskA
                   onClick={() => {
                     setSelectedQuestion(q);
                     setShowExplanation(false);
-                    // Also fire a "view" attempt? No, let's wait for actual interaction
+                    setSelectedAnswer(null);
+                    setSubmittedAnswer(null);
+                    setIsCorrect(null);
                   }}
                   className={cn(
                     "w-full text-right p-4 rounded-2xl border transition-all group",
@@ -288,21 +319,71 @@ export const QuestionBank = ({ onClose, onAskAI }: { onClose: () => void, onAskA
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {selectedQuestion.options.map((opt, idx) => (
-                  <div 
+                  <button
                     key={idx}
-                    className="p-4 rounded-2xl border border-slate-100 bg-white flex items-center gap-4 hover:border-emerald-200 transition-colors"
+                    onClick={() => handleAnswerSelect(idx)}
+                    disabled={isSubmitting}
+                    className={cn(
+                      "p-4 rounded-2xl border bg-white flex items-center gap-4 transition-all text-right",
+                      submittedAnswer !== null
+                        ? idx === selectedQuestion.correctAnswer
+                          ? "border-green-500 bg-green-50"
+                          : selectedAnswer === idx
+                            ? "border-red-500 bg-red-50"
+                            : "border-slate-100"
+                        : selectedAnswer === idx
+                          ? "border-emerald-500 bg-emerald-50 shadow-md ring-1 ring-emerald-500/20"
+                          : "border-slate-100 hover:border-emerald-200 hover:bg-emerald-50/10 cursor-pointer"
+                    )}
                   >
-                    <span className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center text-xs font-bold text-slate-500">
+                    <span className={cn(
+                      "w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold",
+                      submittedAnswer !== null
+                        ? idx === selectedQuestion.correctAnswer
+                          ? "bg-green-500 text-white"
+                          : selectedAnswer === idx
+                            ? "bg-red-500 text-white"
+                            : "bg-slate-100 text-slate-500"
+                        : selectedAnswer === idx
+                          ? "bg-emerald-500 text-white"
+                          : "bg-slate-100 text-slate-500"
+                    )}>
                       {idx + 1}
                     </span>
-                    <span className="text-slate-700">
+                    <span className={cn(
+                      "flex-1",
+                      submittedAnswer !== null && idx === selectedQuestion.correctAnswer ? "text-green-700 font-bold" : "text-slate-700"
+                    )}>
                       <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
                         {opt}
                       </ReactMarkdown>
                     </span>
-                  </div>
+                    {submittedAnswer !== null && idx === selectedQuestion.correctAnswer && (
+                      <span className="text-green-600">✓</span>
+                    )}
+                    {submittedAnswer !== null && selectedAnswer === idx && idx !== selectedQuestion.correctAnswer && (
+                      <span className="text-red-600">✗</span>
+                    )}
+                  </button>
                 ))}
               </div>
+
+              {submittedAnswer !== null && (
+                <div className={cn(
+                  "mt-6 p-6 rounded-2xl border text-center",
+                  isCorrect ? "bg-green-50 border-green-200" : "bg-red-50 border-red-200"
+                )}>
+                  <p className={cn(
+                    "font-bold text-lg",
+                    isCorrect ? "text-green-700" : "text-red-700"
+                  )}>
+                    {isCorrect ? "✓ پاسخ صحیح!" : "✗ پاسخ نادرست"}
+                  </p>
+                  <p className="text-slate-600 mt-2">
+                    {isCorrect ? "آفرین! پاسخ درست را انتخاب کردید." : `پاسخ درست: گزینه ${selectedQuestion.correctAnswer + 1}`}
+                  </p>
+                </div>
+              )}
 
               <div className="flex flex-wrap gap-4 pt-8">
                 <button 

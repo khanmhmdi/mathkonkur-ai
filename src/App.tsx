@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, useNavigate, useLocation } from 'react-router-dom';
-import { Navbar, Hero } from './components/Landing';
+import { Navbar, Hero, NavbarProps } from './components/Landing';
 import { ChatInterface } from './components/ChatInterface';
 import { QuestionBank } from './components/QuestionBank';
 import { AuthPage } from './components/AuthPage';
@@ -27,9 +27,16 @@ function AppContent() {
     setIsChatOpen(true);
   };
 
+  const navbarProps: NavbarProps = {
+    onOpenChat: () => {
+      setInitialMessage(null);
+      setIsChatOpen(true);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-white font-sans text-slate-900 selection:bg-indigo-100 selection:text-indigo-900" dir="rtl">
-      <Navbar />
+      <Navbar {...navbarProps} />
       <Routes>
         <Route path="/" element={
           <main>
